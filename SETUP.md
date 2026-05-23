@@ -1,4 +1,4 @@
-# BankReceiptTracker — Setup Guide
+# CashRadar — Setup Guide
 
 ## What changed from the old version
 
@@ -19,8 +19,8 @@
 
 ```bash
 cd /home/ubuntu
-git clone https://github.com/LordAlex-2-me/BankReceiptTracker BankReceiptTracker
-cd BankReceiptTracker
+git clone https://github.com/LordAlex-2-me/CashRadar CashRadar
+cd CashRadar
 ```
 
 ### 2. Install dependencies
@@ -37,13 +37,13 @@ Download your OAuth client credentials from Google Cloud Console
 and copy to the project folder:
 
 ```bash
-scp -i your-key.pem credentials.json ubuntu@140.238.84.15:/home/ubuntu/BankReceiptTracker/
+scp -i your-key.pem credentials.json ubuntu@140.238.84.15:/home/ubuntu/CashRadar/
 ```
 
 ### 4. Create config.py
 
 ```bash
-nano /home/ubuntu/BankReceiptTracker/config.py
+nano /home/ubuntu/CashRadar/config.py
 ```
 
 Paste:
@@ -58,7 +58,7 @@ The database is created automatically when any script imports `db.py`.
 You can force it with:
 
 ```bash
-cd /home/ubuntu/BankReceiptTracker
+cd /home/ubuntu/CashRadar
 python3 -c "import db; print('DB ready')"
 ```
 
@@ -77,12 +77,12 @@ Create `/etc/systemd/system/banktracker-bot.service`:
 
 ```ini
 [Unit]
-Description=BankReceiptTracker Telegram Bot
+Description=CashRadar Telegram Bot
 After=network.target
 
 [Service]
 User=ubuntu
-WorkingDirectory=/home/ubuntu/BankReceiptTracker
+WorkingDirectory=/home/ubuntu/CashRadar
 ExecStart=/usr/bin/python3 bot.py
 Restart=always
 RestartSec=10
@@ -103,7 +103,7 @@ sudo journalctl -u banktracker-bot -f   # watch logs
 
 ```bash
 tmux new -s bot
-cd /home/ubuntu/BankReceiptTracker
+cd /home/ubuntu/CashRadar
 python3 bot.py
 # Ctrl+B then D to detach
 ```
@@ -121,13 +121,13 @@ crontab -e
 Add:
 ```
 # Email polling — every 5 minutes
-*/5 * * * * cd /home/ubuntu/BankReceiptTracker && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
+*/5 * * * * cd /home/ubuntu/CashRadar && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
 
 # Daily summary — 8AM Lagos time (7AM UTC)
-0 7 * * * cd /home/ubuntu/BankReceiptTracker && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
+0 7 * * * cd /home/ubuntu/CashRadar && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
 
 # Weekly report — Sunday 9AM Lagos time (8AM UTC)
-0 8 * * 0 cd /home/ubuntu/BankReceiptTracker && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
+0 8 * * 0 cd /home/ubuntu/CashRadar && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
 ```
 
 ---

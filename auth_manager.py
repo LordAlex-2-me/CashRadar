@@ -1,5 +1,5 @@
 """
-auth_manager.py — Per-user Gmail OAuth2 for BankReceiptTracker.
+auth_manager.py — Per-user Gmail OAuth2 for CashRadar.
 
 Each user's OAuth token is stored as a JSON blob in the users table.
 The first-time auth flow produces a URL the user visits in their browser,

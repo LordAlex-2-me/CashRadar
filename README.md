@@ -1,4 +1,4 @@
-# BankReceiptTracker
+# CashRadar
 
 Automatically monitors your FirstBank Nigeria email alerts and sends you budget updates on Telegram — after every single transaction.
 
@@ -81,8 +81,8 @@ Email marked as read (never processed twice)
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/LordAlex-2-me/BankReceiptTracker
-cd BankReceiptTracker
+git clone https://github.com/LordAlex-2-me/CashRadar
+cd CashRadar
 ```
 
 ### 2. Install dependencies
@@ -117,13 +117,13 @@ crontab -e
 
 ```
 # Poll Gmail every 5 minutes
-*/5 * * * * cd /home/ubuntu/BankReceiptTracker && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
+*/5 * * * * cd /home/ubuntu/CashRadar && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
 
 # Daily summary at 8AM Lagos time
-0 7 * * * cd /home/ubuntu/BankReceiptTracker && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
+0 7 * * * cd /home/ubuntu/CashRadar && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
 
 # Weekly report Sunday 9AM Lagos time
-0 8 * * 0 cd /home/ubuntu/BankReceiptTracker && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
+0 8 * * 0 cd /home/ubuntu/CashRadar && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
 ```
 
 ---
@@ -131,7 +131,7 @@ crontab -e
 ## File structure
 
 ```
-BankReceiptTracker/
+CashRadar/
 ├── bot.py              # Telegram bot — commands and onboarding
 ├── email_poller.py     # Cron script — polls Gmail for all users
 ├── parse_email.py      # Regex parser for FirstBank email format

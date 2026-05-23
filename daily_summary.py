@@ -2,7 +2,7 @@
 daily_summary.py — Send daily budget summary to all active users.
 
 Cron entry (7AM UTC = 8AM Lagos time):
-    0 7 * * * cd /home/ubuntu/BankReceiptTracker && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
+    0 7 * * * cd /home/ubuntu/CashRadar && python3 daily_summary.py >> /home/ubuntu/tracker.log 2>&1
 """
 
 from db import get_all_active_users

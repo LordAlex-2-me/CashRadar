@@ -1,5 +1,5 @@
 """
-db.py — SQLite database layer for BankReceiptTracker.
+db.py — SQLite database layer for CashRadar.
 
 Single tracker.db file lives alongside the project.
 All per-user state lives here instead of flat JSON files.

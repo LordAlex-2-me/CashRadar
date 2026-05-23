@@ -1,12 +1,12 @@
 """
-email_poller.py — Multi-user Gmail poller for BankReceiptTracker.
+email_poller.py — Multi-user Gmail poller for CashRadar.
 
 Replaces the old read_emails.py. Run by cron every 5 minutes.
 Iterates all active users who have connected Gmail, polls each inbox,
 parses transactions, updates budget, sends Telegram notification.
 
 Cron entry:
-    */5 * * * * cd /home/ubuntu/BankReceiptTracker && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
+    */5 * * * * cd /home/ubuntu/CashRadar && python3 email_poller.py >> /home/ubuntu/tracker.log 2>&1
 """
 
 import base64

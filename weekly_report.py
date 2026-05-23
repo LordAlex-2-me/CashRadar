@@ -2,7 +2,7 @@
 weekly_report.py — Send weekly spending report to all active users.
 
 Cron entry (8AM UTC Sunday = 9AM Lagos time):
-    0 8 * * 0 cd /home/ubuntu/BankReceiptTracker && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
+    0 8 * * 0 cd /home/ubuntu/CashRadar && python3 weekly_report.py >> /home/ubuntu/tracker.log 2>&1
 """
 
 from db import get_all_active_users

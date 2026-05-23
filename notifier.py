@@ -1,5 +1,5 @@
 """
-notifier.py — Telegram message formatter for BankReceiptTracker.
+notifier.py — Telegram message formatter for CashRadar.
 
 Sends messages in monospace box format using Telegram's <pre> tag.
 All box-drawing uses Unicode box characters that align perfectly in

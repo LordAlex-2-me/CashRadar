@@ -1,5 +1,5 @@
 """
-budget_tracker.py — Per-user budget logic for BankReceiptTracker.
+budget_tracker.py — Per-user budget logic for CashRadar.
 
 Replaces the old JSON-file-based budget_tracker.py.
 All state now lives in SQLite via db.py.

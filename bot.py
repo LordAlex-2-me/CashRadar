@@ -1,5 +1,5 @@
 """
-bot.py — Telegram bot for BankReceiptTracker.
+bot.py — Telegram bot for CashRadar.
 
 Handles user onboarding and commands. Runs as a long-running process
 alongside the cron jobs.
@@ -49,7 +49,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = user.first_name or "there"
     msg = (
-        f"👋 Hey {name}! Welcome to <b>BankReceiptTracker</b>.\n\n"
+        f"👋 Hey {name}! Welcome to <b>CashRadar</b>.\n\n"
         "I monitor your FirstBank Nigeria email alerts and send you "
         "budget updates right here in Telegram — automatically, every 5 minutes.\n\n"
         "<b>To get started:</b>\n"
