@@ -1,5 +1,5 @@
 """
-bot.py — Telegram bot for CashRadar.
+bot.py — Telegram bot for BankReceiptTracker.
 
 Handles user onboarding and commands. Runs as a long-running process
 alongside the cron jobs.
@@ -49,7 +49,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     name = user.first_name or "there"
     msg = (
-        f"👋 Hey {name}! Welcome to <b>CashRadar</b>.\n\n"
+        f"👋 Hey {name}! Welcome to <b>BankReceiptTracker</b>.\n\n"
         "I monitor your FirstBank Nigeria email alerts and send you "
         "budget updates right here in Telegram — automatically, every 5 minutes.\n\n"
         "<b>To get started:</b>\n"
@@ -87,9 +87,9 @@ async def connect_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         email   = db_user.get("gmail_email", "your Gmail")
         await update.message.reply_text(
             f"✅ Your Gmail is already connected ({email}).\n\n"
-            "To reconnect with a different account, use /connect again."
+            "To reconnect with a different account, send /connect again."
         )
-        # Still fall through to re-auth if they want
+        return ConversationHandler.END
 
     try:
         auth_url = start_auth_flow(user_id)
@@ -102,22 +102,21 @@ async def connect_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = (
         "Let's connect your Gmail inbox.\n\n"
-        f"<b>Step 1:</b> Open this link in your browser:\n{auth_url}\n\n"
-        "<b>Step 2:</b> Sign in with the Gmail that receives your FirstBank alerts.\n\n"
-        "<b>Step 3:</b> Copy the code Google gives you and paste it here."
+        "<b>Step 1:</b> Open this link on a desktop browser:\n"
+        f"{auth_url}\n\n"
+        "<b>Step 2:</b> Sign in with the Gmail that receives your FirstBank alerts "
+        "and click Allow.\n\n"
+        "<b>Step 3:</b> You'll see a confirmation page. Come back here — "
+        "I'll confirm automatically within a few seconds. ✅"
     )
     await update.message.reply_text(msg, parse_mode="HTML")
-    return WAITING_AUTH_CODE
 
-
-async def connect_receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id   = update.effective_user.id
-    auth_code = update.message.text.strip()
-
-    await update.message.reply_text("⏳ Connecting to Gmail...")
+    # Wait for the background thread to capture the token, then confirm
+    import asyncio
+    await asyncio.sleep(2)
 
     try:
-        email = finish_auth_flow(user_id, auth_code)
+        email = finish_auth_flow(user_id)
         await update.message.reply_text(
             f"✅ Connected! I'm now monitoring <b>{email}</b> for FirstBank alerts.\n\n"
             "Next: use /setbudget to set your daily spending limit.",
@@ -125,9 +124,18 @@ async def connect_receive_code(update: Update, context: ContextTypes.DEFAULT_TYP
         )
     except Exception as e:
         await update.message.reply_text(
-            f"❌ That didn't work: {e}\n\nTry /connect again from the beginning."
+            f"❌ Connection failed: {e}\n\nTry /connect again."
         )
 
+    return ConversationHandler.END
+
+
+async def connect_receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # This state is no longer reached but kept so the ConversationHandler doesn't break.
+    await update.message.reply_text(
+        "No need to paste anything — just click the link and approve access. "
+        "I'll confirm automatically."
+    )
     return ConversationHandler.END
 
 

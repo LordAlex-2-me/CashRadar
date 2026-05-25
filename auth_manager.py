@@ -1,66 +1,129 @@
 """
-auth_manager.py — Per-user Gmail OAuth2 for CashRadar.
+auth_manager.py — Per-user Gmail OAuth2 for BankReceiptTracker.
 
 Each user's OAuth token is stored as a JSON blob in the users table.
-The first-time auth flow produces a URL the user visits in their browser,
-then pastes the auth code back to the bot. No local file or browser pop-up
-needed on the server.
+Auth flow: bot starts a local HTTP server on a random port, sends the user
+a Google authorisation URL, Google redirects back to localhost with the code,
+the local server captures it automatically. User just clicks the link —
+no copy-pasting a code.
+
+Note: the user must run /connect from a device where they can open a browser
+that can reach localhost on their machine. For most users on desktop/laptop
+this works seamlessly. On mobile they should open the link on a desktop.
 
 Usage:
     from auth_manager import get_gmail_service, start_auth_flow, finish_auth_flow
 """
 
 import json
+import threading
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
+from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from db import get_user, save_gmail_token
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
-# Path to your OAuth client credentials file (downloaded from Google Cloud Console).
-# This file is NOT in git. One shared credentials.json for the whole app is fine —
-# each user gets their own token stored in the DB.
 import os
 CREDENTIALS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "credentials.json")
 
-# In-memory store for pending OAuth flows keyed by user_id.
-# These are short-lived (user completes auth within minutes).
-_pending_flows: dict[int, Flow] = {}
+# In-memory store for pending flows keyed by user_id.
+_pending_flows: dict[int, InstalledAppFlow] = {}
+# Stores completed tokens keyed by user_id until finish_auth_flow() picks them up.
+_completed_tokens: dict[int, tuple] = {}
 
 
 def start_auth_flow(user_id: int) -> str:
     """
-    Begin OAuth flow for a user. Returns the authorisation URL they must visit.
-    Stores the flow object in memory until finish_auth_flow() is called.
+    Begin OAuth flow for a user.
+    Starts a local HTTP server on a random port, returns the auth URL.
+    Google redirects back to that local server automatically after the user approves.
+    The token is captured in the background and stored via finish_auth_flow().
     """
-    flow = Flow.from_client_secrets_file(
-        CREDENTIALS_FILE,
-        scopes=SCOPES,
-        redirect_uri="urn:ietf:wg:oauth:2.0:oob",  # out-of-band: user pastes code back
-    )
+    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+
+    # Run the local server in a background thread so bot.py doesn't block.
+    def _run():
+        creds = flow.run_local_server(
+            port=0,               # pick any free port
+            open_browser=False,   # don't try to open browser on the server
+            success_message=(
+                "✅ Gmail connected! You can close this tab and return to Telegram."
+            ),
+        )
+        _completed_tokens[user_id] = creds
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+    _pending_flows[user_id] = (flow, thread)
+
+    # Give the local server a moment to start and generate its redirect URI
+    import time
+    time.sleep(1)
+
+    # Build the auth URL from the flow's redirect URI (set by run_local_server)
     auth_url, _ = flow.authorization_url(
         access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",  # force refresh_token even if previously authorised
+        prompt="consent",
     )
-    _pending_flows[user_id] = flow
     return auth_url
 
 
-def finish_auth_flow(user_id: int, auth_code: str) -> str:
+def finish_auth_flow(user_id: int) -> str:
     """
-    Complete OAuth flow using the code the user pasted.
-    Fetches the token, discovers the Gmail address, saves both to DB.
-    Returns the Gmail address on success, raises on failure.
+    Called after the background thread has captured the token.
+    Polls briefly for the completed token, saves it to DB.
+    Returns the Gmail address on success, raises ValueError if token not ready.
     """
-    flow = _pending_flows.pop(user_id, None)
-    if flow is None:
-        raise ValueError("No pending auth flow for this user. Use /connect first.")
+    import time
+    # Wait up to 3 minutes for the user to complete auth in their browser
+    for _ in range(180):
+        if user_id in _completed_tokens:
+            break
+        time.sleep(1)
 
-    flow.fetch_token(code=auth_code.strip())
-    creds = flow.credentials
+    creds = _completed_tokens.pop(user_id, None)
+    _pending_flows.pop(user_id, None)
+
+    if creds is None:
+        raise ValueError(
+            "Auth timed out or wasn't completed. Please use /connect to try again."
+        )
+
+    service = build("gmail", "v1", credentials=creds)
+    profile = service.users().getProfile(userId="me").execute()
+    email   = profile.get("emailAddress", "unknown")
+
+    save_gmail_token(user_id, creds.to_json(), email)
+    return email
+
+
+def finish_auth_flow(user_id: int, auth_code: str = None) -> str:
+    """
+    Compatibility wrapper — auth_code param is ignored (token captured automatically).
+    Kept so bot.py doesn't need changes.
+    """
+    import time
+    for _ in range(180):
+        if user_id in _completed_tokens:
+            break
+        time.sleep(1)
+
+    creds = _completed_tokens.pop(user_id, None)
+    _pending_flows.pop(user_id, None)
+
+    if creds is None:
+        raise ValueError(
+            "Auth timed out. Please use /connect to try again."
+        )
+
+    service = build("gmail", "v1", credentials=creds)
+    profile = service.users().getProfile(userId="me").execute()
+    email   = profile.get("emailAddress", "unknown")
+
+    save_gmail_token(user_id, creds.to_json(), email)
+    return email
 
     # Discover which Gmail address this token belongs to
     service = build("gmail", "v1", credentials=creds)
